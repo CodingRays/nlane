@@ -407,7 +407,7 @@ inline void Write<_Cl*>(_Cl** addr, _Cl* data) {
 
 template<class _Cl>
 inline void Atomic(_Cl func) {
-    detail::PromotionState state{ IsCompatibleReadWrite() };
+    detail::PromotionState state{ detail::IsCompatibleReadWrite() };
 	if (state != detail::PromotionState::NO_RUNNING) {
         if(state == detail::PromotionState::COMPATIBLE) {
 		    func();
@@ -441,7 +441,7 @@ inline void Atomic(_Cl func) {
 
 template<class _Cl>
 inline void AtomicRead(_Cl func) {
-    detail::PromotionState state{ IsCompatibleReadOnly() };
+    detail::PromotionState state{ detail::IsCompatibleReadOnly() };
 	if (state != detail::PromotionState::NO_RUNNING) {
         if(state == detail::PromotionState::COMPATIBLE) {
 		    func();
