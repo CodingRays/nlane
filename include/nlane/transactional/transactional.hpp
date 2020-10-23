@@ -14,6 +14,10 @@
  * limitations under the License. 
  */
 
+/**
+ * This file contains the public transactional memory interface.
+ */
+
 #pragma once
 
 #include <cstdint>
@@ -71,12 +75,12 @@ enum class PromotionState {
 /**
  * Tests if a read write transaction can be started.
  */
-PromotionState IsCompatibleReadWrite() noexcept;
+PromotionState IsReadWriteCompatible();
 
 /**
  * Tests if a read only transaction can be started.
  */
-PromotionState IsCompatibleReadOnly() noexcept;
+PromotionState IsReadOnlyCompatible();
 
 /**
  * Starts a read-write transaction.
@@ -127,6 +131,12 @@ void End();
 inline void* WordAlignedAddress(void* addr);
 
 } // namespace detail
+
+/**
+ * Initializes the thread local transaction engine.
+ * Must be called before any other call to the thread local transaction engine.
+ */
+void ThreadInit();
 
 /**
  * Atomically reads the word at specified address. 
@@ -407,7 +417,7 @@ inline void Write<_Cl*>(_Cl** addr, _Cl* data) {
 
 template<class _Cl>
 inline void Atomic(_Cl func) {
-    detail::PromotionState state{ detail::IsCompatibleReadWrite() };
+    detail::PromotionState state{ detail::IsReadWriteCompatible() };
 	if (state != detail::PromotionState::NO_RUNNING) {
         if(state == detail::PromotionState::COMPATIBLE) {
 		    func();
@@ -424,7 +434,7 @@ inline void Atomic(_Cl func) {
 			func();
 
 			detail::Commit();
-			return true;
+			return;
 		}
 		catch (TransactionError& err) {
 			if (!err.shouldRetry()) {
@@ -441,7 +451,7 @@ inline void Atomic(_Cl func) {
 
 template<class _Cl>
 inline void AtomicRead(_Cl func) {
-    detail::PromotionState state{ detail::IsCompatibleReadOnly() };
+    detail::PromotionState state{ detail::IsReadOnlyCompatible() };
 	if (state != detail::PromotionState::NO_RUNNING) {
         if(state == detail::PromotionState::COMPATIBLE) {
 		    func();
@@ -458,7 +468,7 @@ inline void AtomicRead(_Cl func) {
 			func();
 
 			detail::Commit();
-			return true;
+			return;
 		}
 		catch (TransactionError& err) {
 			if (!err.shouldRetry()) {
